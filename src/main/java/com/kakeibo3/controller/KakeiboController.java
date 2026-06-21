@@ -1,10 +1,18 @@
-package com.kakeibo3;
+package com.kakeibo3.controller;
 
 import java.net.URL;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
 
+import com.kakeibo3.dao.TransactionDao;
+import com.kakeibo3.model.CategoryType;
+import com.kakeibo3.model.TransactionProperty;
+import com.kakeibo3.model.TransactionRecord;
+
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -18,7 +26,6 @@ import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 
-
 public class KakeiboController implements Initializable {
 	
 	@FXML
@@ -31,6 +38,13 @@ public class KakeiboController implements Initializable {
 	private Label cashBalanceLabel;
 	
 	private List<ToggleButton> monthButtons;
+	
+	// null = 年間表示
+	private Integer selectedMonth = null;
+	
+	// 現在選択中の年
+	private int selectedYear =
+	        LocalDate.now().getYear();
 
     // ----------------------------
     // 上部メニュー
@@ -83,29 +97,23 @@ public class KakeiboController implements Initializable {
 
     @FXML
     private Button undoButton;
-
-    // ----------------------------
-    // 明細一覧
-    // ----------------------------
+    @FXML
+    private TableView<TransactionProperty> transactionTable;
 
     @FXML
-    private TableView<?> transactionTable;
+    private TableColumn<TransactionProperty, LocalDate> colDate;
 
     @FXML
-    private TableColumn<?, ?> colDate;
+    private TableColumn<TransactionProperty, Long> colAmount;
 
     @FXML
-    private TableColumn<?, ?> colAmount;
+    private TableColumn<TransactionProperty, CategoryType> colCategory;
 
     @FXML
-    private TableColumn<?, ?> colCategory;
+    private TableColumn<TransactionProperty, String> colPaymentMethod;
 
     @FXML
-    private TableColumn<?, ?> colPaymentMethod;
-
-    @FXML
-    private TableColumn<?, ?> colDetail;
-
+    private TableColumn<TransactionProperty, String> colDetail;
     // ----------------------------
     // 収支内訳
     // ----------------------------
@@ -137,14 +145,26 @@ public class KakeiboController implements Initializable {
         String text = button.getText();
 
         if ("年間".equals(text)) {
+
+            selectedMonth = null;
             summaryTitleLabel.setText("年間収支内訳");
+
         } else {
+
+            selectedMonth =
+                    Integer.parseInt(
+                            text.replace("月", ""));
+
             summaryTitleLabel.setText(text + "収支内訳");
         }
 
-        System.out.println("選択タブ : " + text);
-    }
+        refreshTable();
 
+        System.out.println(
+                "選択タブ : " + text +
+                " / 月=" + selectedMonth);
+    }
+    
     @Override
     public void initialize(URL location, ResourceBundle resources) {
     	
@@ -156,6 +176,33 @@ public class KakeiboController implements Initializable {
         yearButton.setSelected(true);
 
         summaryTitleLabel.setText("年間収支内訳");
+        
+     // ----------------------------
+     // TableView列設定
+     // ----------------------------
+
+     colDate.setCellValueFactory(cellData ->
+             cellData.getValue().dateProperty());
+
+     colAmount.setCellValueFactory(cellData ->
+             cellData.getValue().amountProperty().asObject());
+
+     colCategory.setCellValueFactory(cellData ->
+             cellData.getValue().categoryProperty());
+
+     colPaymentMethod.setCellValueFactory(cellData ->
+             cellData.getValue().paymentMethodProperty());
+
+     colDetail.setCellValueFactory(cellData ->
+             cellData.getValue().detailProperty());
+     
+  // ----------------------------
+  // DB読込
+  // ----------------------------
+
+  TransactionDao dao = new TransactionDao();
+
+  refreshTable();
         
         monthButtons = List.of(
                 janButton,
@@ -189,4 +236,34 @@ public class KakeiboController implements Initializable {
 
         System.out.println("KakeiboController initialized");
     }
+    
+    private void refreshTable() {
+
+        TransactionDao dao = new TransactionDao();
+
+        List<TransactionRecord> records =
+                dao.findAll();
+
+        if (selectedMonth != null) {
+
+            records = records.stream()
+                    .filter(record ->
+                            record.date()
+                                  .getMonthValue()
+                                  == selectedMonth)
+                    .toList();
+        }
+
+        ObservableList<TransactionProperty> items =
+                FXCollections.observableArrayList(
+                        records.stream()
+                                .map(TransactionProperty::new)
+                                .toList());
+
+        transactionTable.setItems(items);
+
+        System.out.println(
+                "表示件数 = " + items.size());
+    }
+    
 }
