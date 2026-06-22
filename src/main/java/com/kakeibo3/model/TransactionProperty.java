@@ -11,123 +11,120 @@ import javafx.beans.property.StringProperty;
 
 public class TransactionProperty {
 
-    private final ObjectProperty<LocalDate> date =
-            new SimpleObjectProperty<>();
+	private final ObjectProperty<LocalDate> date = new SimpleObjectProperty<>();
 
-    private final LongProperty amount =
-            new SimpleLongProperty();
+	private final LongProperty amount = new SimpleLongProperty();
 
-    private final ObjectProperty<CategoryType> category =
-            new SimpleObjectProperty<>();
+	private final ObjectProperty<CategoryType> category = new SimpleObjectProperty<>();
 
-    private final StringProperty paymentMethod =
-            new SimpleStringProperty();
+	private final ObjectProperty<PaymentMethodType> paymentMethod = new SimpleObjectProperty<>();
 
-    private final StringProperty detail =
-            new SimpleStringProperty();
+	private final StringProperty detail = new SimpleStringProperty();
 
-    public TransactionProperty() {
-    }
+	public TransactionProperty() {
+	}
 
-    public TransactionProperty(TransactionRecord record) {
+	public TransactionProperty(TransactionRecord record) {
 
-        setDate(record.date());
-        setAmount(record.amount());
-        setCategory(record.category());
-        setPaymentMethod(record.paymentMethod());
-        setDetail(record.detail());
-    }
+		setDate(record.date());
+		setAmount(record.amount());
+		setCategory(record.category());
+		setPaymentMethod(record.paymentMethod());
+		setDetail(record.detail());
+	}
 
-    // -------------------------
-    // date
-    // -------------------------
+	// -------------------------
+	// date
+	// -------------------------
 
-    public LocalDate getDate() {
-        return date.get();
-    }
+	public LocalDate getDate() {
+		return date.get();
+	}
 
-    public void setDate(LocalDate value) {
-        date.set(value);
-    }
+	public void setDate(LocalDate value) {
+		date.set(value);
+	}
 
-    public ObjectProperty<LocalDate> dateProperty() {
-        return date;
-    }
+	public ObjectProperty<LocalDate> dateProperty() {
+		return date;
+	}
 
-    // -------------------------
-    // amount
-    // -------------------------
+	// -------------------------
+	// amount
+	// -------------------------
 
-    public long getAmount() {
-        return amount.get();
-    }
+	public long getAmount() {
+		return amount.get();
+	}
 
-    public void setAmount(long value) {
-        amount.set(value);
-    }
+	public void setAmount(long value) {
+		amount.set(value);
+	}
 
-    public LongProperty amountProperty() {
-        return amount;
-    }
+	public LongProperty amountProperty() {
+		return amount;
+	}
 
-    // -------------------------
-    // category
-    // -------------------------
+	// -------------------------
+	// category
+	// -------------------------
 
-    public CategoryType getCategory() {
-        return category.get();
-    }
+	public CategoryType getCategory() {
+		return category.get();
+	}
 
-    public void setCategory(CategoryType value) {
-        category.set(value);
-    }
+	public void setCategory(CategoryType value) {
+		category.set(value);
+	}
 
-    public ObjectProperty<CategoryType> categoryProperty() {
-        return category;
-    }
+	public ObjectProperty<CategoryType> categoryProperty() {
+		return category;
+	}
 
-    // -------------------------
-    // paymentMethod
-    // -------------------------
+	// -------------------------
+	// paymentMethod
+	// -------------------------
 
-    public String getPaymentMethod() {
-        return paymentMethod.get();
-    }
+	public PaymentMethodType getPaymentMethod() {
+		return paymentMethod.get();
+	}
 
-    public void setPaymentMethod(String value) {
-        paymentMethod.set(value);
-    }
+	public void setPaymentMethod(
+	        PaymentMethodType value) {
+		paymentMethod.set(value);
+	}
 
-    public StringProperty paymentMethodProperty() {
-        return paymentMethod;
-    }
+	public ObjectProperty<PaymentMethodType>
+	paymentMethodProperty() {
+		return paymentMethod;
+	}
 
-    // -------------------------
-    // detail
-    // -------------------------
+	// -------------------------
+	// detail
+	// -------------------------
 
-    public String getDetail() {
-        return detail.get();
-    }
+	public String getDetail() {
+		return detail.get();
+	}
 
-    public void setDetail(String value) {
-        detail.set(value);
-    }
+	public void setDetail(String value) {
+		detail.set(value);
+	}
 
-    public StringProperty detailProperty() {
-        return detail;
-    }
+	public StringProperty detailProperty() {
+		return detail;
+	}
 
-    /**
-     * UI → DB変換
-     */
-    public TransactionRecord toRecord() {
+	/**
+	 * UI → DB変換
+	 */
+	public TransactionRecord toRecord() {
 
-        return new TransactionRecord(
-                getDate(),
-                getAmount(),
-                getCategory(),
-                getPaymentMethod(),
-                getDetail());
-    }
+		return new TransactionRecord(
+				getDate(),
+				getAmount(),
+				getCategory(),
+				getPaymentMethod(),
+				getDetail());
+	}
 }

@@ -65,4 +65,13 @@ public enum CategoryType {
     public boolean isIncome() {
         return income;
     }
+    
+    @Override
+    public String toString() {
+        return label;
+    }
+    
+    
+    
+    
 }

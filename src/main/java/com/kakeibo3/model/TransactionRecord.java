@@ -6,7 +6,7 @@ public record TransactionRecord(
         LocalDate date,
         long amount,
         CategoryType category,
-        String paymentMethod,
+        PaymentMethodType paymentMethod,
         String detail) {
 
     public TransactionRecord {
@@ -25,6 +25,12 @@ public record TransactionRecord(
             throw new IllegalArgumentException(
                     "category is null");
         }
+        
+        if (paymentMethod == null) {
+            throw new IllegalArgumentException(
+                    "paymentMethod is null");
+        }
+        
     }
 
     public long signedAmount() {

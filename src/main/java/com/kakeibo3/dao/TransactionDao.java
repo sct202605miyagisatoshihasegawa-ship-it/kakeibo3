@@ -9,223 +9,235 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.kakeibo3.model.CategoryType;
+import com.kakeibo3.model.PaymentMethodType;
 import com.kakeibo3.model.TransactionRecord;
 
 public class TransactionDao {
 
-	/**
-	 * 全件取得
-	 */
-	public List<TransactionRecord> findAll() {
+    /**
+     * 全件取得
+     */
+    public List<TransactionRecord> findAll() {
 
-		String sql = """
-				SELECT
-				    transaction_date,
-				    amount,
-				    category,
-				    payment_method,
-				    detail
-				FROM transactions
-				ORDER BY transaction_date
-				""";
+        String sql = """
+                SELECT
+                    transaction_date,
+                    amount,
+                    category,
+                    payment_method,
+                    detail
+                FROM transactions
+                ORDER BY transaction_date
+                """;
 
-		List<TransactionRecord> result = new ArrayList<>();
+        List<TransactionRecord> result = new ArrayList<>();
 
-		try (
-				Connection connection = DatabaseManager.getConnection();
-				PreparedStatement statement = connection.prepareStatement(sql);
-				ResultSet rs = statement.executeQuery()) {
+        try (
+                Connection connection = DatabaseManager.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(sql);
+                ResultSet rs = statement.executeQuery()) {
 
-			while (rs.next()) {
+            while (rs.next()) {
 
-				TransactionRecord record = new TransactionRecord(
-						LocalDate.parse(
-								rs.getString("transaction_date")),
-						rs.getLong("amount"),
-						CategoryType.valueOf(
-								rs.getString("category")),
-						rs.getString("payment_method"),
-						rs.getString("detail"));
+            	TransactionRecord record =
+            	        new TransactionRecord(
+            	                LocalDate.parse(
+            	                        rs.getString("transaction_date")),
+            	                rs.getLong("amount"),
+            	                CategoryType.valueOf(
+            	                        rs.getString("category")),
+            	                PaymentMethodType.valueOf(
+            	                        rs.getString("payment_method")),
+            	                rs.getString("detail"));
 
-				result.add(record);
-			}
+                result.add(record);
+            }
 
-		} catch (SQLException e) {
-			throw new RuntimeException(
-					"データ取得に失敗しました。", e);
-		}
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "データ取得に失敗しました。", e);
+        }
 
-		return result;
-	}
+        return result;
+    }
 
-	/**
-	 * 全件置換
-	 */
-	public void replaceAll(List<TransactionRecord> records) {
+    /**
+     * 全件置換
+     */
+    public void replaceAll(List<TransactionRecord> records) {
 
-		String deleteSql = "DELETE FROM transactions";
+        String deleteSql =
+                "DELETE FROM transactions";
 
-		String insertSql = """
-				INSERT INTO transactions (
-				    transaction_date,
-				    amount,
-				    category,
-				    payment_method,
-				    detail
-				)
-				VALUES (?, ?, ?, ?, ?)
-				""";
+        String insertSql = """
+                INSERT INTO transactions (
+                    transaction_date,
+                    amount,
+                    category,
+                    payment_method,
+                    detail
+                )
+                VALUES (?, ?, ?, ?, ?)
+                """;
 
-		try (
-				Connection connection = DatabaseManager.getConnection()) {
+        try (
+                Connection connection =
+                        DatabaseManager.getConnection()) {
 
-			connection.setAutoCommit(false);
+            connection.setAutoCommit(false);
 
-			try {
+            try {
 
-				// 全削除
-				try (PreparedStatement deleteStmt = connection.prepareStatement(deleteSql)) {
+                // 全削除
+                try (PreparedStatement deleteStmt =
+                        connection.prepareStatement(deleteSql)) {
 
-					deleteStmt.executeUpdate();
-				}
+                    deleteStmt.executeUpdate();
+                }
 
-				// 全挿入
-				try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
+                // 全挿入
+                try (PreparedStatement insertStmt =
+                        connection.prepareStatement(insertSql)) {
 
-					for (TransactionRecord record : records) {
+                    for (TransactionRecord record : records) {
 
-						insertStmt.setString(
-								1,
-								record.date().toString());
+                        insertStmt.setString(
+                                1,
+                                record.date().toString());
 
-						insertStmt.setLong(
-								2,
-								record.amount());
+                        insertStmt.setLong(
+                                2,
+                                record.amount());
 
-						insertStmt.setString(
-								3,
-								record.category().name());
+                        insertStmt.setString(
+                                3,
+                                record.category().name());
 
-						insertStmt.setString(
-								4,
-								record.paymentMethod());
+                        insertStmt.setString(
+                                4,
+                                record.paymentMethod().name());
 
-						insertStmt.setString(
-								5,
-								record.detail());
+                        insertStmt.setString(
+                                5,
+                                record.detail());
 
-						insertStmt.executeUpdate();
-					}
-				}
+                        insertStmt.executeUpdate();
+                    }
+                }
 
-				connection.commit();
+                connection.commit();
 
-			} catch (Exception e) {
+            } catch (Exception e) {
 
-				connection.rollback();
-				throw e;
-			}
+                connection.rollback();
+                throw e;
+            }
 
-		} catch (Exception e) {
+        } catch (Exception e) {
 
-			throw new RuntimeException(
-					"データ保存に失敗しました。", e);
-		}
-	}
+            throw new RuntimeException(
+                    "データ保存に失敗しました。", e);
+        }
+        }
+        
+        /**
+         * 指定月のみ置換
+         */
+        public void replaceMonth(
+                int year,
+                int month,
+                List<TransactionRecord> records) {
 
-	/**
-	 * 指定月のみ置換
-	 */
-	public void replaceMonth(
-			int year,
-			int month,
-			List<TransactionRecord> records) {
+            String targetMonth =
+                    String.format(
+                            "%04d-%02d",
+                            year,
+                            month);
 
-		String targetMonth = String.format(
-				"%04d-%02d",
-				year,
-				month);
+            String deleteSql = """
+                    DELETE FROM transactions
+                    WHERE substr(
+                            transaction_date,
+                            1,
+                            7
+                    ) = ?
+                    """;
 
-		String deleteSql = """
-				DELETE FROM transactions
-				WHERE substr(
-				        transaction_date,
-				        1,
-				        7
-				) = ?
-				""";
+            String insertSql = """
+                    INSERT INTO transactions (
+                        transaction_date,
+                        amount,
+                        category,
+                        payment_method,
+                        detail
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                    """;
 
-		String insertSql = """
-				INSERT INTO transactions (
-				    transaction_date,
-				    amount,
-				    category,
-				    payment_method,
-				    detail
-				)
-				VALUES (?, ?, ?, ?, ?)
-				""";
+            try (
+                    Connection connection =
+                            DatabaseManager.getConnection()) {
 
-		try (
-				Connection connection = DatabaseManager.getConnection()) {
+                connection.setAutoCommit(false);
 
-			connection.setAutoCommit(false);
+                try {
 
-			try {
+                    // 対象月削除
+                    try (PreparedStatement deleteStmt =
+                            connection.prepareStatement(deleteSql)) {
 
-				// 対象月削除
-				try (PreparedStatement deleteStmt = connection.prepareStatement(deleteSql)) {
+                        deleteStmt.setString(
+                                1,
+                                targetMonth);
 
-					deleteStmt.setString(
-							1,
-							targetMonth);
+                        deleteStmt.executeUpdate();
+                    }
 
-					deleteStmt.executeUpdate();
-				}
+                    // 対象月登録
+                    try (PreparedStatement insertStmt =
+                            connection.prepareStatement(insertSql)) {
 
-				// 対象月登録
-				try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
+                        for (TransactionRecord record : records) {
 
-					for (TransactionRecord record : records) {
+                            insertStmt.setString(
+                                    1,
+                                    record.date().toString());
 
-						insertStmt.setString(
-								1,
-								record.date().toString());
+                            insertStmt.setLong(
+                                    2,
+                                    record.amount());
 
-						insertStmt.setLong(
-								2,
-								record.amount());
+                            insertStmt.setString(
+                                    3,
+                                    record.category().name());
 
-						insertStmt.setString(
-								3,
-								record.category().name());
+                            insertStmt.setString(
+                                    4,
+                                    record.paymentMethod().name());
 
-						insertStmt.setString(
-								4,
-								record.paymentMethod());
+                            insertStmt.setString(
+                                    5,
+                                    record.detail());
 
-						insertStmt.setString(
-								5,
-								record.detail());
+                            insertStmt.executeUpdate();
+                        }
+                    }
 
-						insertStmt.executeUpdate();
-					}
-				}
+                    connection.commit();
 
-				connection.commit();
+                } catch (Exception e) {
 
-			} catch (Exception e) {
+                    connection.rollback();
+                    throw e;
+                }
 
-				connection.rollback();
-				throw e;
-			}
+            } catch (Exception e) {
 
-		} catch (Exception e) {
-
-			throw new RuntimeException(
-					"月データ保存に失敗しました。",
-					e);
-		}
-
-	}
+                throw new RuntimeException(
+                        "月データ保存に失敗しました。",
+                        e);
+            }
+        
+    }
 }
