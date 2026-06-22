@@ -211,9 +211,36 @@ public class KakeiboController implements Initializable {
 							event.getNewValue());
 		});
 
-		colPaymentMethod.setCellValueFactory(cellData -> cellData.getValue().paymentMethodProperty());
+		colPaymentMethod.setCellValueFactory(
+				cellData -> cellData.getValue().paymentMethodProperty());
+		
+		// ----------------------------
+		// 決済方法列編集
+		// ----------------------------
+		
+		
+		System.out.println(
+		        "PaymentMethod CellFactory SET");
 
-		colDetail.setCellValueFactory(cellData -> cellData.getValue().detailProperty());
+		colPaymentMethod.setCellFactory(
+		        ComboBoxTableCell.forTableColumn(
+		                PaymentMethodType.values()));
+
+		colPaymentMethod.setOnEditCommit(event -> {
+
+		    TransactionProperty item =
+		            event.getRowValue();
+
+		    item.setPaymentMethod(
+		            event.getNewValue());
+
+		    System.out.println(
+		            "決済方法編集 : " +
+		                    event.getNewValue());
+		});
+
+		colDetail.setCellValueFactory(
+				cellData -> cellData.getValue().detailProperty());
 
 		// ----------------------------
 		// 内容列編集

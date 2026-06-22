@@ -17,7 +17,9 @@ public class TransactionProperty {
 
 	private final ObjectProperty<CategoryType> category = new SimpleObjectProperty<>();
 
-	private final ObjectProperty<PaymentMethodType> paymentMethod = new SimpleObjectProperty<>();
+	private final ObjectProperty<PaymentMethodType>
+			paymentMethod = 
+					new SimpleObjectProperty<>();
 
 	private final StringProperty detail = new SimpleStringProperty();
 

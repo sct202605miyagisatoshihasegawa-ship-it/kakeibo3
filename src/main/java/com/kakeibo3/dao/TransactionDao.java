@@ -47,7 +47,7 @@ public class TransactionDao {
             	                rs.getLong("amount"),
             	                CategoryType.valueOf(
             	                        rs.getString("category")),
-            	                PaymentMethodType.valueOf(
+            	                PaymentMethodType.fromDbValue(
             	                        rs.getString("payment_method")),
             	                rs.getString("detail"));
 

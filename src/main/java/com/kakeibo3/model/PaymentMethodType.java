@@ -12,7 +12,7 @@ public enum PaymentMethodType {
             "クレジットカード"),
 
     CASH(
-            "手元現金");
+            "現金");
 
     private final String label;
 
@@ -24,6 +24,40 @@ public enum PaymentMethodType {
 
     public String getLabel() {
         return label;
+    }
+
+    /**
+     * DB読込用
+     * Enum名(BANK_A)でも
+     * 表示名(銀行口座A)でも読める
+     */
+    public static PaymentMethodType fromDbValue(
+            String value) {
+
+        if (value == null) {
+            return null;
+        }
+
+        // まず Enum名を試す
+        try {
+            return PaymentMethodType.valueOf(
+                    value);
+        } catch (IllegalArgumentException e) {
+            // ラベル照合へ
+        }
+
+        // 表示名照合
+        for (PaymentMethodType type
+                : values()) {
+
+            if (type.label.equals(value)) {
+                return type;
+            }
+        }
+
+        throw new IllegalArgumentException(
+                "Unknown payment method: "
+                        + value);
     }
 
     @Override
