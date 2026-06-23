@@ -4,6 +4,7 @@ import java.net.URL;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import com.kakeibo3.dao.TransactionDao;
@@ -17,7 +18,10 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
@@ -167,6 +171,68 @@ public class KakeiboController implements Initializable {
 				"選択タブ : " + text +
 						" / 月=" + selectedMonth);
 	}
+		
+		private void saveCurrentMonth() {
+
+		    // ----------------------------
+		    // 年間タブは保存不可
+		    // ----------------------------
+
+		    if (selectedMonth == null) {
+
+		        Alert alert = new Alert(
+		                AlertType.WARNING);
+
+		        alert.setTitle("保存");
+		        alert.setHeaderText(null);
+
+		        alert.setContentText(
+		                "年間タブは保存できません。\n"
+		                        + "月タブを選択してください。");
+
+		        alert.showAndWait();
+
+		        return;
+		    }
+
+		    // ----------------------------
+		    // 保存確認
+		    // ----------------------------
+
+		    Alert confirm = new Alert(
+		            AlertType.CONFIRMATION);
+
+		    confirm.setTitle("保存");
+		    confirm.setHeaderText(null);
+
+		    confirm.setContentText(
+		            selectedMonth +
+		                    "月のデータを保存しますか？");
+
+		    Optional<ButtonType> result =
+		            confirm.showAndWait();
+
+		    if (result.isEmpty()
+		            || result.get() != ButtonType.OK) {
+
+		        return;
+		    }
+
+		    // ----------------------------
+		    // ここは次回実装
+		    // ----------------------------
+
+		    Alert complete = new Alert(
+		            AlertType.INFORMATION);
+
+		    complete.setTitle("保存");
+		    complete.setHeaderText(null);
+
+		    complete.setContentText(
+		            "保存処理は次回実装します。");
+
+		    complete.showAndWait();
+		}
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
@@ -352,6 +418,9 @@ public class KakeiboController implements Initializable {
 										.add(colPaymentMethod.widthProperty())
 										.add(25)));
 
+		saveButton.setOnAction(
+		        event -> saveCurrentMonth());
+
 		System.out.println("KakeiboController initialized");
 	}
 
@@ -516,8 +585,6 @@ public class KakeiboController implements Initializable {
 
 	private TableCell<TransactionProperty, LocalDate> createDateCell() {
 
-		System.out.println(
-				"createDateCell 作成");//デバック6/23:16時40分
 
 		return new TableCell<>() {
 
