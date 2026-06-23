@@ -444,8 +444,6 @@ public class KakeiboController implements Initializable {
 			@Override
 			public void startEdit() {
 
-				System.out.println(//デバック6/23：16時半ころ
-						"DateCell startEdit");
 
 				if (!isEditable()
 						|| !getTableView().isEditable()
