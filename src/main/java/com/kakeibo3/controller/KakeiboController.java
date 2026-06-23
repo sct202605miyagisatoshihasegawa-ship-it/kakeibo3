@@ -19,6 +19,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TableCell;
@@ -115,10 +116,7 @@ public class KakeiboController implements Initializable {
 	private TableColumn<TransactionProperty, CategoryType> colCategory;
 
 	@FXML
-	private TableColumn<
-	        TransactionProperty,
-	        PaymentMethodType>
-	        colPaymentMethod;
+	private TableColumn<TransactionProperty, PaymentMethodType> colPaymentMethod;
 
 	@FXML
 	private TableColumn<TransactionProperty, String> colDetail;
@@ -185,11 +183,43 @@ public class KakeiboController implements Initializable {
 		// TableView列設定
 		// ----------------------------
 
-		colDate.setCellValueFactory(cellData -> cellData.getValue().dateProperty());
+		colDate.setCellValueFactory(cellData ->
 
-		colAmount.setCellValueFactory(cellData -> cellData.getValue().amountProperty().asObject());
+				cellData.getValue().dateProperty());
 
-		colCategory.setCellValueFactory(cellData -> cellData.getValue().categoryProperty());
+		// ----------------------------
+		// 日付列編集
+		// ----------------------------
+
+		colDate.setCellFactory(
+				column -> createDateCell());
+
+		colDate.setOnEditCommit(event -> {
+
+			TransactionProperty item = event.getRowValue();
+
+			LocalDate newValue = event.getNewValue();
+
+			if (newValue == null) {
+
+				transactionTable.refresh();
+				return;
+			}
+
+			item.setDate(newValue);
+
+			System.out.println(
+					"日付編集 : " +
+							newValue);
+		});
+
+		colAmount.setCellValueFactory(cellData ->
+
+		cellData.getValue().amountProperty().asObject());
+
+		colCategory.setCellValueFactory(cellData ->
+
+		cellData.getValue().categoryProperty());
 
 		// ----------------------------
 		// カテゴリ列編集
@@ -213,30 +243,28 @@ public class KakeiboController implements Initializable {
 
 		colPaymentMethod.setCellValueFactory(
 				cellData -> cellData.getValue().paymentMethodProperty());
-		
+
 		// ----------------------------
 		// 決済方法列編集
 		// ----------------------------
-		
-		
+
 		System.out.println(
-		        "PaymentMethod CellFactory SET");
+				"PaymentMethod CellFactory SET");
 
 		colPaymentMethod.setCellFactory(
-		        ComboBoxTableCell.forTableColumn(
-		                PaymentMethodType.values()));
+				ComboBoxTableCell.forTableColumn(
+						PaymentMethodType.values()));
 
 		colPaymentMethod.setOnEditCommit(event -> {
 
-		    TransactionProperty item =
-		            event.getRowValue();
+			TransactionProperty item = event.getRowValue();
 
-		    item.setPaymentMethod(
-		            event.getNewValue());
+			item.setPaymentMethod(
+					event.getNewValue());
 
-		    System.out.println(
-		            "決済方法編集 : " +
-		                    event.getNewValue());
+			System.out.println(
+					"決済方法編集 : " +
+							event.getNewValue());
 		});
 
 		colDetail.setCellValueFactory(
@@ -416,6 +444,9 @@ public class KakeiboController implements Initializable {
 			@Override
 			public void startEdit() {
 
+				System.out.println(//デバック6/23：16時半ころ
+						"DateCell startEdit");
+
 				if (!isEditable()
 						|| !getTableView().isEditable()
 						|| !getTableColumn().isEditable()) {
@@ -480,7 +511,104 @@ public class KakeiboController implements Initializable {
 					setContentDisplay(
 							ContentDisplay.TEXT_ONLY);
 				}
-				
+
+			}
+		};
+	}
+
+	private TableCell<TransactionProperty, LocalDate> createDateCell() {
+
+		System.out.println(
+				"createDateCell 作成");//デバック6/23:16時40分
+
+		return new TableCell<>() {
+
+			private final DatePicker datePicker = new DatePicker();
+
+			{
+				datePicker.setOnAction(event -> {
+
+					commitEdit(
+							datePicker.getValue());
+				});
+
+				datePicker.focusedProperty()
+						.addListener((obs,
+								oldValue,
+								newValue) -> {
+
+							if (!newValue) {
+
+								commitEdit(
+										datePicker.getValue());
+							}
+						});
+			}
+
+			@Override
+			public void startEdit() {
+
+				if (!isEditable()
+						|| !getTableView().isEditable()
+						|| !getTableColumn().isEditable()) {
+					return;
+				}
+
+				super.startEdit();
+
+				datePicker.setValue(
+						getItem());
+
+				setGraphic(datePicker);
+
+				setContentDisplay(
+						ContentDisplay.GRAPHIC_ONLY);
+			}
+
+			@Override
+			public void cancelEdit() {
+
+				super.cancelEdit();
+
+				setText(
+						getItem() == null
+								? ""
+								: getItem().toString());
+
+				setContentDisplay(
+						ContentDisplay.TEXT_ONLY);
+			}
+
+			@Override
+			protected void updateItem(
+					LocalDate item,
+					boolean empty) {
+
+				super.updateItem(
+						item,
+						empty);
+
+				if (empty || item == null) {
+
+					setText(null);
+					setGraphic(null);
+
+				} else if (isEditing()) {
+
+					datePicker.setValue(item);
+
+					setGraphic(datePicker);
+
+					setContentDisplay(
+							ContentDisplay.GRAPHIC_ONLY);
+
+				} else {
+
+					setText(item.toString());
+
+					setContentDisplay(
+							ContentDisplay.TEXT_ONLY);
+				}
 			}
 		};
 	}
