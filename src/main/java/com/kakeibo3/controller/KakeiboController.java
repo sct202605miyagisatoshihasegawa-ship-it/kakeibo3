@@ -4,7 +4,6 @@ import java.net.URL;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.ResourceBundle;
 
 import com.kakeibo3.controller.cell.AmountTableCell;
@@ -14,16 +13,14 @@ import com.kakeibo3.model.CategoryType;
 import com.kakeibo3.model.PaymentMethodType;
 import com.kakeibo3.model.TransactionProperty;
 import com.kakeibo3.model.TransactionRecord;
+import com.kakeibo3.util.AlertUtil;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TableColumn;
@@ -169,29 +166,26 @@ public class KakeiboController implements Initializable {
 				"選択タブ : " + text +
 						" / 月=" + selectedMonth);
 	}
-	
-	private final TransactionDao transactionDao =
-	        new TransactionDao();
-		
+
+	private final TransactionDao transactionDao = new TransactionDao();
+
 	private void saveCurrentMonth() {
+		
+		System.out.println(
+				"saveCurrentMonth START");
 
 		// ----------------------------
 		// 年間タブは保存不可
 		// ----------------------------
+		
+		transactionTable.requestFocus();
 
 		if (selectedMonth == null) {
 
-			Alert alert = new Alert(
-					AlertType.WARNING);
-
-			alert.setTitle("保存");
-			alert.setHeaderText(null);
-
-			alert.setContentText(
+			AlertUtil.showWarning(
+					"保存",
 					"年間タブは保存できません。\n"
 							+ "月タブを選択してください。");
-
-			alert.showAndWait();
 
 			return;
 		}
@@ -200,25 +194,17 @@ public class KakeiboController implements Initializable {
 		// 保存確認
 		// ----------------------------
 
-		Alert confirm = new Alert(
-				AlertType.CONFIRMATION);
 
-		confirm.setTitle("保存");
-		confirm.setHeaderText(null);
 
-		confirm.setContentText(
+		if (!AlertUtil.showConfirm(
+				"保存",
 				selectedYear + "年"
 						+ selectedMonth
-						+ "月のデータを保存しますか？");
-
-		Optional<ButtonType> result =
-				confirm.showAndWait();
-
-		if (result.isEmpty()
-				|| result.get() != ButtonType.OK) {
+						+ "月のデータを保存しますか？")) {
 
 			return;
 		}
+		
 
 		try {
 
@@ -226,8 +212,7 @@ public class KakeiboController implements Initializable {
 			// 年月整合性チェック
 			// ----------------------------
 
-			for (TransactionProperty item :
-					transactionTable.getItems()) {
+			for (TransactionProperty item : transactionTable.getItems()) {
 
 				LocalDate date = item.getDate();
 
@@ -235,17 +220,10 @@ public class KakeiboController implements Initializable {
 						|| date.getYear() != selectedYear
 						|| date.getMonthValue() != selectedMonth) {
 
-					Alert alert = new Alert(
-							AlertType.WARNING);
-
-					alert.setTitle("保存エラー");
-					alert.setHeaderText(null);
-
-					alert.setContentText(
+					AlertUtil.showWarning(
+							"保存エラー",
 							"選択中の年月以外のデータが含まれています。\n"
 									+ "日付を確認してください。");
-
-					alert.showAndWait();
 
 					return;
 				}
@@ -255,11 +233,10 @@ public class KakeiboController implements Initializable {
 			// TransactionRecord変換
 			// ----------------------------
 
-			List<TransactionRecord> records =
-					transactionTable.getItems()
-							.stream()
-							.map(TransactionProperty::toRecord)
-							.toList();
+			List<TransactionRecord> records = transactionTable.getItems()
+					.stream()
+					.map(TransactionProperty::toRecord)
+					.toList();
 
 			// ----------------------------
 			// DB保存
@@ -274,32 +251,18 @@ public class KakeiboController implements Initializable {
 			// 保存完了
 			// ----------------------------
 
-			Alert complete = new Alert(
-					AlertType.INFORMATION);
-
-			complete.setTitle("保存");
-			complete.setHeaderText(null);
-
-			complete.setContentText(
+			AlertUtil.showInfo(
+					"保存",
 					"保存しました。");
-
-			complete.showAndWait();
 
 		} catch (Exception e) {
 
 			e.printStackTrace();
 
-			Alert alert = new Alert(
-					AlertType.ERROR);
-
-			alert.setTitle("保存エラー");
-			alert.setHeaderText(null);
-
-			alert.setContentText(
+			AlertUtil.showError(
+					"保存エラー",
 					"保存に失敗しました。\n"
 							+ e.getMessage());
-
-			alert.showAndWait();
 		}
 	}
 
@@ -320,14 +283,16 @@ public class KakeiboController implements Initializable {
 
 		colDate.setCellValueFactory(cellData ->
 
-				cellData.getValue().dateProperty());
+		cellData.getValue().dateProperty());
 
 		// ----------------------------
 		// 日付列編集
 		// ----------------------------
 
 		colDate.setCellFactory(
-				column -> new DateTableCell());
+				column -> new DateTableCell(
+						() -> selectedYear,
+						() -> selectedMonth));
 
 		colDate.setOnEditCommit(event -> {
 
@@ -488,27 +453,22 @@ public class KakeiboController implements Initializable {
 										.add(25)));
 
 		saveButton.setOnAction(
-		        event -> saveCurrentMonth());
+				event -> saveCurrentMonth());
 
 		System.out.println("KakeiboController initialized");
 	}
 
 	private void refreshTable() {
 
-		TransactionDao dao = new TransactionDao();
-
-		List<TransactionRecord> records = dao.findAll();
+		List<TransactionRecord> records = transactionDao.findAll();
 
 		if (selectedMonth != null) {
 
-		    records = records.stream()
-		            .filter(record ->
-		                    record.date().getYear()
-		                            == selectedYear
-		                    &&
-		                    record.date().getMonthValue()
-		                            == selectedMonth)
-		            .toList();
+			records = records.stream()
+					.filter(record -> record.date().getYear() == selectedYear
+							&&
+							record.date().getMonthValue() == selectedMonth)
+					.toList();
 		}
 
 		ObservableList<TransactionProperty> items = FXCollections.observableArrayList(
@@ -533,6 +493,4 @@ public class KakeiboController implements Initializable {
 						transactionTable.isEditable());
 	}
 
-	
-	
 }
