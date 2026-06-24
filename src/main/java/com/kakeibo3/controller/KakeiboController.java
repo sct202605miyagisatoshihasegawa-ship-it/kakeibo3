@@ -7,6 +7,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
+import com.kakeibo3.controller.cell.AmountTableCell;
+import com.kakeibo3.controller.cell.DateTableCell;
 import com.kakeibo3.dao.TransactionDao;
 import com.kakeibo3.model.CategoryType;
 import com.kakeibo3.model.PaymentMethodType;
@@ -22,15 +24,11 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.ContentDisplay;
-import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
@@ -171,68 +169,139 @@ public class KakeiboController implements Initializable {
 				"選択タブ : " + text +
 						" / 月=" + selectedMonth);
 	}
+	
+	private final TransactionDao transactionDao =
+	        new TransactionDao();
 		
-		private void saveCurrentMonth() {
+	private void saveCurrentMonth() {
 
-		    // ----------------------------
-		    // 年間タブは保存不可
-		    // ----------------------------
+		// ----------------------------
+		// 年間タブは保存不可
+		// ----------------------------
 
-		    if (selectedMonth == null) {
+		if (selectedMonth == null) {
 
-		        Alert alert = new Alert(
-		                AlertType.WARNING);
+			Alert alert = new Alert(
+					AlertType.WARNING);
 
-		        alert.setTitle("保存");
-		        alert.setHeaderText(null);
+			alert.setTitle("保存");
+			alert.setHeaderText(null);
 
-		        alert.setContentText(
-		                "年間タブは保存できません。\n"
-		                        + "月タブを選択してください。");
+			alert.setContentText(
+					"年間タブは保存できません。\n"
+							+ "月タブを選択してください。");
 
-		        alert.showAndWait();
+			alert.showAndWait();
 
-		        return;
-		    }
-
-		    // ----------------------------
-		    // 保存確認
-		    // ----------------------------
-
-		    Alert confirm = new Alert(
-		            AlertType.CONFIRMATION);
-
-		    confirm.setTitle("保存");
-		    confirm.setHeaderText(null);
-
-		    confirm.setContentText(
-		            selectedMonth +
-		                    "月のデータを保存しますか？");
-
-		    Optional<ButtonType> result =
-		            confirm.showAndWait();
-
-		    if (result.isEmpty()
-		            || result.get() != ButtonType.OK) {
-
-		        return;
-		    }
-
-		    // ----------------------------
-		    // ここは次回実装
-		    // ----------------------------
-
-		    Alert complete = new Alert(
-		            AlertType.INFORMATION);
-
-		    complete.setTitle("保存");
-		    complete.setHeaderText(null);
-
-		    complete.setContentText(
-		            "保存処理は次回実装します。");
-
-		    complete.showAndWait();
+			return;
 		}
+
+		// ----------------------------
+		// 保存確認
+		// ----------------------------
+
+		Alert confirm = new Alert(
+				AlertType.CONFIRMATION);
+
+		confirm.setTitle("保存");
+		confirm.setHeaderText(null);
+
+		confirm.setContentText(
+				selectedYear + "年"
+						+ selectedMonth
+						+ "月のデータを保存しますか？");
+
+		Optional<ButtonType> result =
+				confirm.showAndWait();
+
+		if (result.isEmpty()
+				|| result.get() != ButtonType.OK) {
+
+			return;
+		}
+
+		try {
+
+			// ----------------------------
+			// 年月整合性チェック
+			// ----------------------------
+
+			for (TransactionProperty item :
+					transactionTable.getItems()) {
+
+				LocalDate date = item.getDate();
+
+				if (date == null
+						|| date.getYear() != selectedYear
+						|| date.getMonthValue() != selectedMonth) {
+
+					Alert alert = new Alert(
+							AlertType.WARNING);
+
+					alert.setTitle("保存エラー");
+					alert.setHeaderText(null);
+
+					alert.setContentText(
+							"選択中の年月以外のデータが含まれています。\n"
+									+ "日付を確認してください。");
+
+					alert.showAndWait();
+
+					return;
+				}
+			}
+
+			// ----------------------------
+			// TransactionRecord変換
+			// ----------------------------
+
+			List<TransactionRecord> records =
+					transactionTable.getItems()
+							.stream()
+							.map(TransactionProperty::toRecord)
+							.toList();
+
+			// ----------------------------
+			// DB保存
+			// ----------------------------
+
+			transactionDao.replaceMonth(
+					selectedYear,
+					selectedMonth,
+					records);
+
+			// ----------------------------
+			// 保存完了
+			// ----------------------------
+
+			Alert complete = new Alert(
+					AlertType.INFORMATION);
+
+			complete.setTitle("保存");
+			complete.setHeaderText(null);
+
+			complete.setContentText(
+					"保存しました。");
+
+			complete.showAndWait();
+
+		} catch (Exception e) {
+
+			e.printStackTrace();
+
+			Alert alert = new Alert(
+					AlertType.ERROR);
+
+			alert.setTitle("保存エラー");
+			alert.setHeaderText(null);
+
+			alert.setContentText(
+					"保存に失敗しました。\n"
+							+ e.getMessage());
+
+			alert.showAndWait();
+		}
+	}
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
@@ -258,7 +327,7 @@ public class KakeiboController implements Initializable {
 		// ----------------------------
 
 		colDate.setCellFactory(
-				column -> createDateCell());
+				column -> new DateTableCell());
 
 		colDate.setOnEditCommit(event -> {
 
@@ -361,7 +430,7 @@ public class KakeiboController implements Initializable {
 		//----------------------------
 
 		colAmount.setCellFactory(
-				column -> createNumericCell());
+				column -> new AmountTableCell());
 
 		colAmount.setOnEditCommit(event -> {
 
@@ -432,10 +501,14 @@ public class KakeiboController implements Initializable {
 
 		if (selectedMonth != null) {
 
-			records = records.stream()
-					.filter(record -> record.date()
-							.getMonthValue() == selectedMonth)
-					.toList();
+		    records = records.stream()
+		            .filter(record ->
+		                    record.date().getYear()
+		                            == selectedYear
+		                    &&
+		                    record.date().getMonthValue()
+		                            == selectedMonth)
+		            .toList();
 		}
 
 		ObservableList<TransactionProperty> items = FXCollections.observableArrayList(
@@ -460,222 +533,6 @@ public class KakeiboController implements Initializable {
 						transactionTable.isEditable());
 	}
 
-	private TableCell<TransactionProperty, Long> createNumericCell() {
-
-		return new TableCell<>() {
-
-			private final TextField textField = new TextField();
-
-			private void commitCurrentValue() {
-
-				String text = textField.getText();
-
-				if (text == null ||
-						text.isBlank()) {
-
-					cancelEdit();
-					return;
-				}
-
-				commitEdit(
-						Long.parseLong(text));
-			}
-
-			{
-				textField.textProperty()
-						.addListener((obs,
-								oldValue,
-								newValue) -> {
-
-							if (!newValue.matches("\\d*")) {
-
-								textField.setText(
-										newValue.replaceAll(
-												"[^\\d]",
-												""));
-							}
-						});
-
-				textField.setOnAction(event -> commitCurrentValue());
-
-				textField.focusedProperty()
-						.addListener((obs,
-								oldValue,
-								newValue) -> {
-
-							if (!newValue) {
-
-								commitCurrentValue();
-							}
-						});
-			}
-
-			@Override
-			public void startEdit() {
-
-
-				if (!isEditable()
-						|| !getTableView().isEditable()
-						|| !getTableColumn().isEditable()) {
-					return;
-				}
-
-				super.startEdit();
-
-				textField.setText(
-						getItem() == null
-								? ""
-								: getItem().toString());
-
-				setGraphic(textField);
-				setContentDisplay(
-						ContentDisplay.GRAPHIC_ONLY);
-
-				textField.requestFocus();
-				textField.selectAll();
-			}
-
-			@Override
-			public void cancelEdit() {
-
-				super.cancelEdit();
-
-				setText(
-						getItem() == null
-								? ""
-								: getItem().toString());
-
-				setContentDisplay(
-						ContentDisplay.TEXT_ONLY);
-			}
-
-			@Override
-			protected void updateItem(
-					Long item,
-					boolean empty) {
-
-				super.updateItem(item, empty);
-
-				if (empty || item == null) {
-
-					setText(null);
-					setGraphic(null);
-
-				} else if (isEditing()) {
-
-					textField.setText(
-							item.toString());
-
-					setGraphic(textField);
-
-					setContentDisplay(
-							ContentDisplay.GRAPHIC_ONLY);
-
-				} else {
-
-					setText(item.toString());
-
-					setContentDisplay(
-							ContentDisplay.TEXT_ONLY);
-				}
-
-			}
-		};
-	}
-
-	private TableCell<TransactionProperty, LocalDate> createDateCell() {
-
-
-		return new TableCell<>() {
-
-			private final DatePicker datePicker = new DatePicker();
-
-			{
-				datePicker.setOnAction(event -> {
-
-					commitEdit(
-							datePicker.getValue());
-				});
-
-				datePicker.focusedProperty()
-						.addListener((obs,
-								oldValue,
-								newValue) -> {
-
-							if (!newValue) {
-
-								commitEdit(
-										datePicker.getValue());
-							}
-						});
-			}
-
-			@Override
-			public void startEdit() {
-
-				if (!isEditable()
-						|| !getTableView().isEditable()
-						|| !getTableColumn().isEditable()) {
-					return;
-				}
-
-				super.startEdit();
-
-				datePicker.setValue(
-						getItem());
-
-				setGraphic(datePicker);
-
-				setContentDisplay(
-						ContentDisplay.GRAPHIC_ONLY);
-			}
-
-			@Override
-			public void cancelEdit() {
-
-				super.cancelEdit();
-
-				setText(
-						getItem() == null
-								? ""
-								: getItem().toString());
-
-				setContentDisplay(
-						ContentDisplay.TEXT_ONLY);
-			}
-
-			@Override
-			protected void updateItem(
-					LocalDate item,
-					boolean empty) {
-
-				super.updateItem(
-						item,
-						empty);
-
-				if (empty || item == null) {
-
-					setText(null);
-					setGraphic(null);
-
-				} else if (isEditing()) {
-
-					datePicker.setValue(item);
-
-					setGraphic(datePicker);
-
-					setContentDisplay(
-							ContentDisplay.GRAPHIC_ONLY);
-
-				} else {
-
-					setText(item.toString());
-
-					setContentDisplay(
-							ContentDisplay.TEXT_ONLY);
-				}
-			}
-		};
-	}
-
+	
+	
 }
