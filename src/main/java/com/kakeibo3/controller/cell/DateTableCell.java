@@ -71,17 +71,7 @@ public class DateTableCell
 					datePicker.getValue());
 		});
 
-		datePicker.focusedProperty()
-				.addListener((obs,
-						oldValue,
-						newValue) -> {
-
-					if (!newValue) {
-
-						commitEdit(
-								datePicker.getValue());
-					}
-				});
+		
 	}
 
 	@Override

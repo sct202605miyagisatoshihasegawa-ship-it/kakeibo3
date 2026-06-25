@@ -13,33 +13,22 @@ public class AmountTableCell
 
 	public AmountTableCell() {
 
-		textField.textProperty()
-				.addListener((obs,
-						oldValue,
-						newValue) -> {
+	    textField.textProperty()
+	            .addListener((obs,
+	                    oldValue,
+	                    newValue) -> {
 
-					if (!newValue.matches("\\d*")) {
+	                if (!newValue.matches("\\d*")) {
 
-						textField.setText(
-								newValue.replaceAll(
-										"[^\\d]",
-										""));
-					}
-				});
+	                    textField.setText(
+	                            newValue.replaceAll(
+	                                    "[^\\d]",
+	                                    ""));
+	                }
+	            });
 
-		textField.setOnAction(
-				event -> commitCurrentValue());
-
-		textField.focusedProperty()
-				.addListener((obs,
-						oldValue,
-						newValue) -> {
-
-					if (!newValue) {
-
-						commitCurrentValue();
-					}
-				});
+	    textField.setOnAction(
+	            event -> commitCurrentValue());
 	}
 
 	private void commitCurrentValue() {
