@@ -8,6 +8,7 @@ import java.util.ResourceBundle;
 
 import com.kakeibo3.controller.cell.AmountTableCell;
 import com.kakeibo3.controller.cell.DateTableCell;
+import com.kakeibo3.controller.cell.DetailTableCell;
 import com.kakeibo3.dao.TransactionDao;
 import com.kakeibo3.model.CategoryType;
 import com.kakeibo3.model.PaymentMethodType;
@@ -30,7 +31,6 @@ import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.ComboBoxTableCell;
-import javafx.scene.control.cell.TextFieldTableCell;
 
 public class KakeiboController implements Initializable {
 
@@ -377,13 +377,14 @@ public class KakeiboController implements Initializable {
 		transactionTable.setEditable(true);
 
 		colDetail.setCellFactory(
-				TextFieldTableCell.forTableColumn());
+				column -> new DetailTableCell());
 
 		colDetail.setOnEditCommit(event -> {
 
 			TransactionProperty item = event.getRowValue();
 
-			item.setDetail(event.getNewValue());
+			item.setDetail(
+					event.getNewValue());
 
 			System.out.println(
 					"内容編集 : " +
@@ -454,6 +455,21 @@ public class KakeiboController implements Initializable {
 
 		saveButton.setOnAction(
 				event -> saveCurrentMonth());
+
+		// ----------------------------
+		// TABキー無効
+		// ----------------------------
+
+		transactionTable.addEventFilter(
+				javafx.scene.input.KeyEvent.KEY_PRESSED,
+				event -> {
+
+					if (event.getCode()
+							== javafx.scene.input.KeyCode.TAB) {
+
+						event.consume();
+					}
+				});
 
 		System.out.println("KakeiboController initialized");
 	}
