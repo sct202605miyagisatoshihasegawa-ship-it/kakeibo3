@@ -7,8 +7,10 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 
 import com.kakeibo3.controller.cell.AmountTableCell;
+import com.kakeibo3.controller.cell.CategoryTableCell;
 import com.kakeibo3.controller.cell.DateTableCell;
 import com.kakeibo3.controller.cell.DetailTableCell;
+import com.kakeibo3.controller.cell.PaymentMethodTableCell;
 import com.kakeibo3.dao.TransactionDao;
 import com.kakeibo3.model.CategoryType;
 import com.kakeibo3.model.PaymentMethodType;
@@ -30,7 +32,6 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.control.cell.ComboBoxTableCell;
 
 public class KakeiboController implements Initializable {
 
@@ -326,8 +327,7 @@ public class KakeiboController implements Initializable {
 		// ----------------------------
 
 		colCategory.setCellFactory(
-				ComboBoxTableCell.forTableColumn(
-						CategoryType.values()));
+				column -> new CategoryTableCell());
 
 		colCategory.setOnEditCommit(event -> {
 
@@ -352,8 +352,7 @@ public class KakeiboController implements Initializable {
 				"PaymentMethod CellFactory SET");
 
 		colPaymentMethod.setCellFactory(
-				ComboBoxTableCell.forTableColumn(
-						PaymentMethodType.values()));
+				column -> new PaymentMethodTableCell());
 
 		colPaymentMethod.setOnEditCommit(event -> {
 
