@@ -51,6 +51,9 @@ public class KakeiboController implements Initializable {
 
 	// キャンセル時に戻すための前回選択月
 	private Integer previousSelectedMonth = null;
+	
+	// リスナーによる再入を防ぐ
+	private boolean suppressToggleListener = false;
 
 	// 現在選択中の年
 	private int selectedYear = LocalDate.now().getYear();
@@ -191,6 +194,8 @@ public class KakeiboController implements Initializable {
 
 	@FXML
 	private void handleMonthSelection(ActionEvent event) {
+		
+		// STEP3-Aでは何もしない
 
 	    Toggle selected = tabGroup.getSelectedToggle();
 
@@ -560,6 +565,24 @@ public class KakeiboController implements Initializable {
 				octButton,
 				novButton,
 				decButton);
+		
+		// ----------------------------
+		// タブ切替監視
+		// ----------------------------
+
+		tabGroup.selectedToggleProperty().addListener(
+		        (obs, oldToggle, newToggle) -> {
+
+		            if (suppressToggleListener) {
+		                return;
+		            }
+
+		            if (!(newToggle instanceof ToggleButton newButton)) {
+		                return;
+		            }
+
+		            changeMonth(newButton);
+		        });
 
 		Objects.requireNonNull(bankABalanceLabel);
 		Objects.requireNonNull(bankBBalanceLabel);
