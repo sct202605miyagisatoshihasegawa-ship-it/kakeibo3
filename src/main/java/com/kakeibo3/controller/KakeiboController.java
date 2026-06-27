@@ -43,11 +43,14 @@ public class KakeiboController implements Initializable {
 
 	@FXML
 	private Label cashBalanceLabel;
-
+	
 	private List<ToggleButton> monthButtons;
 
 	// null = 年間表示
 	private Integer selectedMonth = null;
+
+	// キャンセル時に戻すための前回選択月
+	private Integer previousSelectedMonth = null;
 
 	// 現在選択中の年
 	private int selectedYear = LocalDate.now().getYear();
@@ -136,41 +139,144 @@ public class KakeiboController implements Initializable {
 
 	@FXML
 	private TextArea memoArea;
+	
+	/**
+	 * 月表示を切り替える
+	 */
+	private void changeMonth(ToggleButton button) {
+
+	    String text = button.getText();
+
+	    previousSelectedMonth = selectedMonth;
+
+	    if ("年間".equals(text)) {
+
+	        selectedMonth = null;
+	        summaryTitleLabel.setText("年間収支内訳");
+
+	    } else {
+
+	        selectedMonth =
+	                Integer.parseInt(
+	                        text.replace("月", ""));
+
+	        summaryTitleLabel.setText(
+	                text + "収支内訳");
+	    }
+
+	    refreshTable();
+
+	    System.out.println(
+	            "選択タブ : "
+	                    + text
+	                    + " / 月="
+	                    + selectedMonth);
+	}
+	
+	/**
+	 * キャンセル時に元のタブへ戻す
+	 */
+	private void restorePreviousTab() {
+
+	    if (previousSelectedMonth == null) {
+
+	        yearButton.setSelected(true);
+	        return;
+	    }
+
+	    monthButtons
+	            .get(previousSelectedMonth - 1)
+	            .setSelected(true);
+	}
 
 	@FXML
 	private void handleMonthSelection(ActionEvent event) {
 
-		Toggle selected = tabGroup.getSelectedToggle();
+	    Toggle selected = tabGroup.getSelectedToggle();
 
-		if (!(selected instanceof ToggleButton button)) {
-			return;
-		}
+	    if (!(selected instanceof ToggleButton button)) {
+	        return;
+	    }
 
-		String text = button.getText();
+	    // 未保存なら確認
+	    if (dirty) {
 
-		if ("年間".equals(text)) {
+	        javafx.scene.control.ButtonType saveButtonType =
+	                new javafx.scene.control.ButtonType("保存して移動");
 
-			selectedMonth = null;
-			summaryTitleLabel.setText("年間収支内訳");
+	        javafx.scene.control.ButtonType discardButtonType =
+	                new javafx.scene.control.ButtonType("保存せず移動");
 
-		} else {
+	        javafx.scene.control.ButtonType cancelButtonType =
+	                new javafx.scene.control.ButtonType("キャンセル");
 
-			selectedMonth = Integer.parseInt(
-					text.replace("月", ""));
+	        javafx.scene.control.Alert alert =
+	                new javafx.scene.control.Alert(
+	                        javafx.scene.control.Alert.AlertType.CONFIRMATION);
 
-			summaryTitleLabel.setText(text + "収支内訳");
-		}
+	        alert.setTitle("未保存データ");
+	        alert.setHeaderText(null);
+	        alert.setContentText(
+	                "未保存の変更があります。");
 
-		refreshTable();
+	        alert.getButtonTypes().setAll(
+	                saveButtonType,
+	                discardButtonType,
+	                cancelButtonType);
 
-		System.out.println(
-				"選択タブ : " + text +
-						" / 月=" + selectedMonth);
+	        java.util.Optional<javafx.scene.control.ButtonType> result =
+	                alert.showAndWait();
+
+	        if (result.isEmpty()
+	                || result.get() == cancelButtonType) {
+
+	            restorePreviousTab();
+
+	            return;
+	        }
+
+	        if (result.get() == saveButtonType) {
+
+	            saveCurrentMonth();
+	        } else {
+
+	            clearDirty();
+	        }
+	    }
+
+	    changeMonth(button);
 	}
 
 	private final TransactionDao transactionDao = new TransactionDao();
 
-	private void saveCurrentMonth() {
+
+	/**
+	 * 未保存変更フラグ
+	 */
+	private boolean dirty = false;
+
+	/**
+	 * 編集あり
+	 */
+	private void markDirty() {
+
+	    if (!dirty) {
+
+	        dirty = true;
+	        System.out.println("dirty = true");
+	    }
+	}
+
+	/**
+	 * 保存済み
+	 */
+	private void clearDirty() {
+
+	    dirty = false;
+	    System.out.println("dirty = false");
+	}
+
+	private boolean saveCurrentMonth() {
 		
 		System.out.println(
 				"saveCurrentMonth START");
@@ -183,12 +289,12 @@ public class KakeiboController implements Initializable {
 
 		if (selectedMonth == null) {
 
-			AlertUtil.showWarning(
-					"保存",
-					"年間タブは保存できません。\n"
-							+ "月タブを選択してください。");
+		    AlertUtil.showWarning(
+		            "保存",
+		            "年間タブは保存できません。\n"
+		                    + "月タブを選択してください。");
 
-			return;
+		    return false;
 		}
 
 		// ----------------------------
@@ -198,12 +304,12 @@ public class KakeiboController implements Initializable {
 
 
 		if (!AlertUtil.showConfirm(
-				"保存",
-				selectedYear + "年"
-						+ selectedMonth
-						+ "月のデータを保存しますか？")) {
+		        "保存",
+		        selectedYear + "年"
+		                + selectedMonth
+		                + "月のデータを保存しますか？")) {
 
-			return;
+		    return false;
 		}
 		
 
@@ -222,11 +328,11 @@ public class KakeiboController implements Initializable {
 						|| date.getMonthValue() != selectedMonth) {
 
 					AlertUtil.showWarning(
-							"保存エラー",
-							"選択中の年月以外のデータが含まれています。\n"
-									+ "日付を確認してください。");
+					        "保存エラー",
+					        "選択中の年月以外のデータが含まれています。\n"
+					                + "日付を確認してください。");
 
-					return;
+					return false;
 				}
 			}
 
@@ -252,18 +358,24 @@ public class KakeiboController implements Initializable {
 			// 保存完了
 			// ----------------------------
 
+			clearDirty();
+
 			AlertUtil.showInfo(
-					"保存",
-					"保存しました。");
+			        "保存",
+			        "保存しました。");
+
+			return true;
 
 		} catch (Exception e) {
 
 			e.printStackTrace();
 
 			AlertUtil.showError(
-					"保存エラー",
-					"保存に失敗しました。\n"
-							+ e.getMessage());
+			        "保存エラー",
+			        "保存に失敗しました。\n"
+			                + e.getMessage());
+
+			return false;
 		}
 	}
 
@@ -309,9 +421,11 @@ public class KakeiboController implements Initializable {
 
 			item.setDate(newValue);
 
+			markDirty();
+
 			System.out.println(
-					"日付編集 : " +
-							newValue);
+			        "日付編集 : " +
+			                newValue);
 		});
 
 		colAmount.setCellValueFactory(cellData ->
@@ -334,11 +448,13 @@ public class KakeiboController implements Initializable {
 			TransactionProperty item = event.getRowValue();
 
 			item.setCategory(
-					event.getNewValue());
+			        event.getNewValue());
+
+			markDirty();
 
 			System.out.println(
-					"カテゴリ編集 : " +
-							event.getNewValue());
+			        "カテゴリ編集 : " +
+			                event.getNewValue());
 		});
 
 		colPaymentMethod.setCellValueFactory(
@@ -359,11 +475,13 @@ public class KakeiboController implements Initializable {
 			TransactionProperty item = event.getRowValue();
 
 			item.setPaymentMethod(
-					event.getNewValue());
+			        event.getNewValue());
+
+			markDirty();
 
 			System.out.println(
-					"決済方法編集 : " +
-							event.getNewValue());
+			        "決済方法編集 : " +
+			                event.getNewValue());
 		});
 
 		colDetail.setCellValueFactory(
@@ -383,11 +501,13 @@ public class KakeiboController implements Initializable {
 			TransactionProperty item = event.getRowValue();
 
 			item.setDetail(
-					event.getNewValue());
+			        event.getNewValue());
+
+			markDirty();
 
 			System.out.println(
-					"内容編集 : " +
-							event.getNewValue());
+			        "内容編集 : " +
+			                event.getNewValue());
 		});
 
 		//----------------------------
@@ -414,9 +534,11 @@ public class KakeiboController implements Initializable {
 
 			item.setAmount(newValue);
 
+			markDirty();
+
 			System.out.println(
-					"金額編集 : " +
-							newValue);
+			        "金額編集 : " +
+			                newValue);
 		});
 
 		// ----------------------------
@@ -504,8 +626,10 @@ public class KakeiboController implements Initializable {
 				"表示件数 = " + items.size());
 
 		System.out.println(
-				"編集可 = " +
-						transactionTable.isEditable());
+		        "編集可 = " +
+		                transactionTable.isEditable());
+
+		clearDirty();
 	}
 
 }

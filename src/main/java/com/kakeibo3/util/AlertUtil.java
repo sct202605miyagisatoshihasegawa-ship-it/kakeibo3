@@ -70,4 +70,49 @@ public final class AlertUtil {
 		return result.isPresent()
 				&& result.get() == ButtonType.OK;
 	}
+
+	/**
+	 * 保存確認（保存・破棄・キャンセル）
+	 */
+	public static ConfirmResult showSaveDiscardCancel(
+			String title,
+			String message) {
+
+		ButtonType saveButton =
+				new ButtonType("保存して移動");
+
+		ButtonType discardButton =
+				new ButtonType("保存せず移動");
+
+		ButtonType cancelButton =
+				ButtonType.CANCEL;
+
+		Alert alert =
+				new Alert(AlertType.CONFIRMATION);
+
+		alert.setTitle(title);
+		alert.setHeaderText(null);
+		alert.setContentText(message);
+
+		alert.getButtonTypes().setAll(
+				saveButton,
+				discardButton,
+				cancelButton);
+
+		Optional<ButtonType> result =
+				alert.showAndWait();
+
+		if (result.isEmpty()
+				|| result.get() == cancelButton) {
+
+			return ConfirmResult.CANCEL;
+		}
+
+		if (result.get() == saveButton) {
+
+			return ConfirmResult.SAVE;
+		}
+
+		return ConfirmResult.DISCARD;
+	}
 }
