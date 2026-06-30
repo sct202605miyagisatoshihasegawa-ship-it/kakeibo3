@@ -31,32 +31,34 @@ fx:controller="com.kakeibo3.controller.KakeiboController">
                 <Insets bottom="5" left="5" right="5" top="5" />
             </padding>
             <children>
-                <ToggleButton fx:id="yearButton" text="年間" toggleGroup="$tabGroup"
-                onAction="#handleMonthSelection" />
+            
+            <ToggleButton fx:id="yearButton" text="年間" toggleGroup="$tabGroup"
+                 />
+            
                 <ToggleButton fx:id="janButton" text="1月" toggleGroup="$tabGroup"
-                onAction="#handleMonthSelection" />
+                 />
                 <ToggleButton fx:id="febButton" text="2月" toggleGroup="$tabGroup" 
-                onAction="#handleMonthSelection"/>
+                />
                 <ToggleButton fx:id="marButton" text="3月" toggleGroup="$tabGroup"
-                onAction="#handleMonthSelection" />
+                 />
                 <ToggleButton fx:id="aprButton" text="4月" toggleGroup="$tabGroup" 
-                onAction="#handleMonthSelection"/>
+                />
                 <ToggleButton fx:id="mayButton" text="5月" toggleGroup="$tabGroup"
-                onAction="#handleMonthSelection" />
+                 />
                 <ToggleButton fx:id="junButton" text="6月" toggleGroup="$tabGroup" 
-                onAction="#handleMonthSelection"/>
+                />
                 <ToggleButton fx:id="julButton" text="7月" toggleGroup="$tabGroup" 
-                onAction="#handleMonthSelection"/>
+                />
                 <ToggleButton fx:id="augButton" text="8月" toggleGroup="$tabGroup" 
-                onAction="#handleMonthSelection"/>
+                />
                 <ToggleButton fx:id="sepButton" text="9月" toggleGroup="$tabGroup" 
-                onAction="#handleMonthSelection"/>
+                />
                 <ToggleButton fx:id="octButton" text="10月" toggleGroup="$tabGroup" 
-                onAction="#handleMonthSelection"/>
+                />
                 <ToggleButton fx:id="novButton" text="11月" toggleGroup="$tabGroup" 
-                onAction="#handleMonthSelection"/>
+                />
                 <ToggleButton fx:id="decButton" text="12月" toggleGroup="$tabGroup" 
-                onAction="#handleMonthSelection"/>
+                />
                 <Region HBox.hgrow="ALWAYS" />
                 <Button fx:id="saveButton" text="保存" />
                 <Button fx:id="undoButton" text="戻る" />

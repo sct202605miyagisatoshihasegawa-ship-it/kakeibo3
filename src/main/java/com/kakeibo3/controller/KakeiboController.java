@@ -17,10 +17,10 @@ import com.kakeibo3.model.PaymentMethodType;
 import com.kakeibo3.model.TransactionProperty;
 import com.kakeibo3.model.TransactionRecord;
 import com.kakeibo3.util.AlertUtil;
+import com.kakeibo3.util.ConfirmResult;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -48,9 +48,6 @@ public class KakeiboController implements Initializable {
 
 	// null = 年間表示
 	private Integer selectedMonth = null;
-
-	// キャンセル時に戻すための前回選択月
-	private Integer previousSelectedMonth = null;
 	
 	// リスナーによる再入を防ぐ
 	private boolean suppressToggleListener = false;
@@ -150,8 +147,6 @@ public class KakeiboController implements Initializable {
 
 	    String text = button.getText();
 
-	    previousSelectedMonth = selectedMonth;
-
 	    if ("年間".equals(text)) {
 
 	        selectedMonth = null;
@@ -168,88 +163,26 @@ public class KakeiboController implements Initializable {
 	    }
 
 	    refreshTable();
-
-	    System.out.println(
-	            "選択タブ : "
-	                    + text
-	                    + " / 月="
-	                    + selectedMonth);
-	}
-	
-	/**
-	 * キャンセル時に元のタブへ戻す
-	 */
-	private void restorePreviousTab() {
-
-	    if (previousSelectedMonth == null) {
-
-	        yearButton.setSelected(true);
-	        return;
+	    
 	    }
 
-	    monthButtons
-	            .get(previousSelectedMonth - 1)
-	            .setSelected(true);
-	}
+    @FXML
+   
+	    /**
+	     * タブ選択を元へ戻す
+	     */
+	    private void rollbackSelection(Toggle oldToggle) {
 
-	@FXML
-	private void handleMonthSelection(ActionEvent event) {
-		
-		// STEP3-Aでは何もしない
-
-	    Toggle selected = tabGroup.getSelectedToggle();
-
-	    if (!(selected instanceof ToggleButton button)) {
-	        return;
-	    }
-
-	    // 未保存なら確認
-	    if (dirty) {
-
-	        javafx.scene.control.ButtonType saveButtonType =
-	                new javafx.scene.control.ButtonType("保存して移動");
-
-	        javafx.scene.control.ButtonType discardButtonType =
-	                new javafx.scene.control.ButtonType("保存せず移動");
-
-	        javafx.scene.control.ButtonType cancelButtonType =
-	                new javafx.scene.control.ButtonType("キャンセル");
-
-	        javafx.scene.control.Alert alert =
-	                new javafx.scene.control.Alert(
-	                        javafx.scene.control.Alert.AlertType.CONFIRMATION);
-
-	        alert.setTitle("未保存データ");
-	        alert.setHeaderText(null);
-	        alert.setContentText(
-	                "未保存の変更があります。");
-
-	        alert.getButtonTypes().setAll(
-	                saveButtonType,
-	                discardButtonType,
-	                cancelButtonType);
-
-	        java.util.Optional<javafx.scene.control.ButtonType> result =
-	                alert.showAndWait();
-
-	        if (result.isEmpty()
-	                || result.get() == cancelButtonType) {
-
-	            restorePreviousTab();
-
+	        if (!(oldToggle instanceof ToggleButton oldButton)) {
 	            return;
 	        }
 
-	        if (result.get() == saveButtonType) {
+	        suppressToggleListener = true;
 
-	            saveCurrentMonth();
-	        } else {
+	        oldButton.setSelected(true);
 
-	            clearDirty();
-	        }
-	    }
-
-	    changeMonth(button);
+	        suppressToggleListener = false;
+	    
 	}
 
 	private final TransactionDao transactionDao = new TransactionDao();
@@ -577,11 +510,57 @@ public class KakeiboController implements Initializable {
 		                return;
 		            }
 
+		            // ToggleButtonを再クリックして選択解除された場合
+		            if (newToggle == null) {
+
+		                rollbackSelection(oldToggle);
+		                return;
+		            }
+
 		            if (!(newToggle instanceof ToggleButton newButton)) {
 		                return;
 		            }
 
-		            changeMonth(newButton);
+		            if (!dirty) {
+
+		                changeMonth(newButton);
+		                return;
+		            }
+
+		            ConfirmResult result =
+		                    AlertUtil.showSaveDiscardCancel(
+		                            "未保存データ",
+		                            "未保存の変更があります。");
+
+		            switch (result) {
+
+		            case SAVE:
+
+		                if (saveCurrentMonth()) {
+
+		                    changeMonth(newButton);
+
+		                } else {
+
+		                    rollbackSelection(oldToggle);
+		                }
+
+		                break;
+
+		            case DISCARD:
+
+		                clearDirty();
+
+		                changeMonth(newButton);
+
+		                break;
+
+		            case CANCEL:
+
+		                rollbackSelection(oldToggle);
+
+		                break;
+		            }
 		        });
 
 		Objects.requireNonNull(bankABalanceLabel);
@@ -614,8 +593,6 @@ public class KakeiboController implements Initializable {
 						event.consume();
 					}
 				});
-
-		System.out.println("KakeiboController initialized");
 	}
 
 	private void refreshTable() {
@@ -645,12 +622,6 @@ public class KakeiboController implements Initializable {
 		transactionTable.setEditable(
 				selectedMonth != null);
 
-		System.out.println(
-				"表示件数 = " + items.size());
-
-		System.out.println(
-		        "編集可 = " +
-		                transactionTable.isEditable());
 
 		clearDirty();
 	}
